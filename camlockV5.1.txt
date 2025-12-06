@@ -576,6 +576,68 @@ LocalPlayer.CharacterAdded:Connect(function()
 
 end)
 
+--// BOTÃO ON/OFF FLUTUANTE PARA AIMLOCK
+local floatingToggle = Instance.new("TextButton")
+floatingToggle.Name = "FloatingAimToggle"
+floatingToggle.Size = UDim2.new(0, 120, 0, 40)
+floatingToggle.Position = UDim2.new(0.8, 0, 0.1, 0)
+floatingToggle.Text = "Aimlock: OFF"
+floatingToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+floatingToggle.TextColor3 = Color3.new(1,1,1)
+floatingToggle.Font = Enum.Font.GothamBold
+floatingToggle.TextSize = 14
+floatingToggle.Parent = screenGui
+Instance.new("UICorner", floatingToggle).CornerRadius = UDim.new(0, 8)
+
+-- Atualiza o botão ao clicar
+floatingToggle.MouseButton1Click:Connect(function()
+    aimlockEnabled = not aimlockEnabled
+    currentTarget = nil
+
+    floatingToggle.Text = "Aimlock: " .. (aimlockEnabled and "ON" or "OFF")
+    floatingToggle.BackgroundColor3 = aimlockEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(50, 50, 50)
+
+    if fovCircle then
+        fovCircle.Visible = aimlockEnabled
+    end
+end)
+
+--// FUNÇÃO DE ARRASTAR QUALQUER BOTÃO
+local function draggable(btn)
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or
+           input.UserInputType == Enum.UserInputType.Touch then
+            
+            dragging = true
+            dragStart = input.Position
+            startPos = btn.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    btn.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
+                         input.UserInputType == Enum.UserInputType.Touch) then
+
+            local delta = input.Position - dragStart
+            btn.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+draggable(floatingToggle)
 
 
 
@@ -643,3 +705,4 @@ for i = 1, 10 do
 end
 
 screenGui:Destroy()
+
