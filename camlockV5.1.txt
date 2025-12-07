@@ -7,7 +7,6 @@
     - Whitelist de Times (ilimitado)
     - Stick no alvo atual até ficar inválido (morto/fora de visão/fora do range)
     - Wallcheck (raycast)
-    - ESP com "INIMIGO" + barra de vida (exclui whitelisted)
     - Rótulo "INIMIGO" no topo central da tela
     - AUTO FIRE (dispara automaticamente quando tem alvo)
 --]]
@@ -136,84 +135,6 @@ local function performAutoFire()
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.ButtonR2, false, nil)
         task.wait(0.05) -- Pequeno delay para garantir o disparo
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.ButtonR2, false, nil)
-    end
-end
-
---// ESP
-local function clearESP()
-    for _, gui in ipairs(activeESP) do
-        if gui and gui.Parent then
-            gui:Destroy()
-        end
-    end
-    table.clear(activeESP)
-end
-
-local function updateESPOnce()
-    clearESP()
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local tname = getTeamName(p)
-            if not whitelistedTeams[tname] then
-                local head = p.Character:FindFirstChild("Head")
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if head and hum and hum.Health > 0 and onScreenAndVisible(head) then
-                    local tag = Instance.new("BillboardGui")
-                    tag.Size = UDim2.fromOffset(110, 48)
-                    tag.StudsOffset = Vector3.new(0, 2.6, 0)
-                    tag.AlwaysOnTop = true
-                    tag.Adornee = head
-                    tag.Name = "EnemyESP"
-                    tag.Parent = head
-
-                    local text = Instance.new("TextLabel")
-                    text.Size = UDim2.new(1, 0, 0.5, 0)
-                    text.BackgroundTransparency = 1
-                    text.TextColor3 = Color3.fromRGB(0, 255, 0)
-                    text.TextStrokeTransparency = 0.5
-                    text.Text = "INIMIGO"
-                    text.Font = Enum.Font.GothamBold
-                    text.TextScaled = true
-                    text.Parent = tag
-
-                    local barBg = Instance.new("Frame")
-                    barBg.Size = UDim2.new(1, -6, 0.28, 0)
-                    barBg.Position = UDim2.new(0, 3, 0.52, 0)
-                    barBg.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-                    barBg.BorderSizePixel = 0
-                    barBg.Parent = tag
-                    Instance.new("UICorner", barBg).CornerRadius = UDim.new(0, 3)
-
-                    local bar = Instance.new("Frame")
-                    bar.Size = UDim2.new(math.clamp(hum.Health / hum.MaxHealth, 0, 1), 0, 1, 0)
-                    bar.BackgroundColor3 = Color3.fromRGB(0, 230, 0)
-                    bar.BorderSizePixel = 0
-                    bar.Parent = barBg
-                    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
-
-                    local conn
-                    conn = RunService.RenderStepped:Connect(function()
-                        if hum and hum.Parent and hum.Health > 0 then
-                            bar.Size = UDim2.new(math.clamp(hum.Health / hum.MaxHealth, 0, 1), 0, 1, 0)
-                        else
-                            if tag and tag.Parent then tag:Destroy() end
-                            if conn then conn:Disconnect() end
-                        end
-                    end)
-
-                    table.insert(activeESP, tag)
-                end
-            end
-        end
-    end
-end
-
--- Atualiza ESP em intervalos (leve)
-local function maybeUpdateESP(dt)
-    lastESPUpdate += dt
-    if lastESPUpdate >= ESP_UPDATE_INTERVAL then
-        lastESPUpdate = 0
-        updateESPOnce()
     end
 end
 
@@ -522,7 +443,6 @@ local function createGui()
                 local nowOn = whitelistedTeams[t.Name] == true
                 b.Text = (nowOn and "[✓] " or "[ ] ") .. t.Name
                 -- atualizar ESP para refletir exclusão de aliados
-                updateESPOnce()
             end)
         end
     end
@@ -553,7 +473,6 @@ local rsConn = RunService.RenderStepped:Connect(function(dt)
             enemyLabel.Text = (currentTarget and isTargetValid(currentTarget)) and "INIMIGO" or ""
         end
 
-        maybeUpdateESP(dt)
     else
         if enemyLabel then enemyLabel.Text = "" end
     end
